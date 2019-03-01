@@ -1,0 +1,230 @@
+{\rtf1\ansi\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+{\*\generator Riched20 10.0.17134}\viewkind4\uc1 
+\pard\f0\fs22\lang2070 from estado import Estado\par
+from search import *\par
+import math, random\par
+import time\par
+from copy import deepcopy  \par
+class Game(Problem):\par
+    def __init__(self,inicial,goal = None):\par
+        super().__init__(inicial)\par
+        self.goal = goal\par
+        self.nos_expandidos = 0\par
+\par
+\par
+\par
+    def actions(self,estado):\par
+        actions = []\par
+        percecao = estado.percept(estado.arrumador)\par
+        if "cima" not in list(percecao.keys()) or percecao["cima"][0].nome == "o":\par
+            actions.append("mover_cima")\par
+    \par
+        elif percecao["cima"][0].nome == "*":\par
+            percecao_caixa = estado.percept(percecao["cima"][0])\par
+            if "cima" not in list(percecao_caixa.keys()) or percecao_caixa["cima"][0].nome == "o":\par
+                actions.append("empurra_cima")\par
+        #########################################\par
+        if "baixo" not in list(percecao.keys()) or percecao["baixo"][0].nome == "o":\par
+            actions.append("mover_baixo")\par
+\par
+        elif percecao["baixo"][0].nome == "*":\par
+            percecao_caixa = estado.percept(percecao["baixo"][0])\par
+            if "baixo" not in list(percecao_caixa.keys()) or percecao_caixa["baixo"][0].nome == "o":\par
+                actions.append("empurra_baixo")\par
+        #########################################\par
+        if "esq" not in list(percecao.keys()) or percecao["esq"][0].nome == "o":\par
+            actions.append("mover_esq")\par
+        elif percecao["esq"][0].nome == "*":\par
+            percecao_caixa = estado.percept(percecao["esq"][0])\par
+            if "esq" not in list(percecao_caixa.keys()) or percecao_caixa["esq"][0].nome == "o":\par
+                actions.append("empurra_esq") \par
+        #########################################\par
+        if "direita" not in list(percecao.keys()) or percecao["direita"][0].nome == "o":\par
+            actions.append("mover_direita")\par
+        elif percecao["direita"][0].nome == "*":\par
+            percecao_caixa = estado.percept(percecao["direita"][0])\par
+            if "direita" not in list(percecao_caixa.keys()) or percecao_caixa["direita"][0].nome == "o":\par
+                actions.append("empurra_direita")\par
+        \par
+        return actions \par
+\par
+    \par
+    def result(self,state,action):\par
+        state = deepcopy(state)\par
+        resultante = state\par
+        percept = state.percept(state.arrumador)\par
+        if action == "mover_baixo":\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_baixo(),\\\par
+                                state.local_alvos,state.local_caixas,state.local_paredes)\par
+        elif action == "mover_cima":\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_cima(),\\\par
+                                state.local_alvos,state.local_caixas,state.local_paredes)\par
+        elif action == "mover_esq":\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_esq(),\\\par
+                                state.local_alvos,state.local_caixas,state.local_paredes)\par
+        elif action == "mover_direita":\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_direita(),\\\par
+                                state.local_alvos,state.local_caixas,state.local_paredes)\par
+        elif action == "empurra_baixo":\par
+            percept = percept['baixo']\par
+            for caixa in state.local_caixas:\par
+                if caixa == percept[0]:\par
+                    caixa.mover_baixo()\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_baixo(),\\\par
+            state.local_alvos,state.local_caixas,state.local_paredes)\par
+        elif action == "empurra_cima":\par
+            percept = percept['cima'][0]\par
+            for caixa in state.local_caixas:\par
+                if caixa == percept:\par
+                    caixa.mover_cima()\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_cima(),\\\par
+            state.local_alvos,state.local_caixas,state.local_paredes)\par
+\par
+        elif action == "empurra_esq":\par
+            percept = percept['esq'][0]\par
+            for caixa in state.local_caixas:\par
+                if caixa == percept:\par
+                    caixa.mover_esq()\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_esq(),\\\par
+            state.local_alvos,state.local_caixas,state.local_paredes)\par
+\par
+        elif action == "empurra_direita":\par
+            percept = percept['direita'][0]\par
+            for caixa in state.local_caixas:\par
+                if caixa == percept:\par
+                    caixa.mover_direita()\par
+            resultante = Estado(state.width,state.height,state.arrumador.mover_direita(),\\\par
+            state.local_alvos,state.local_caixas,state.local_paredes)\par
+        self.nos_expandidos+=1   \par
+        #print(resultante)\par
+        return resultante\par
+    \par
+\par
+    def goal_test(self,estado):\par
+        ##E preciso deepcopy\par
+        alvos = deepcopy(estado.local_alvos)\par
+        for caixa in estado.local_caixas:\par
+            for alvo in estado.local_alvos:\par
+                if self.equals(caixa,alvo):\par
+                    alvos.remove(alvo)\par
+        return len(alvos) == 0\par
+            \par
+    def equals(self,caixa,alvo):\par
+        return caixa.width == alvo.width and caixa.height == alvo.height\par
+\par
+    def path_cost(self,c,state1,action,state2):\par
+        return 1 if "empurra" in action else 2\par
+\par
+    def h1(self,no):\par
+        valor_h = 0\par
+        for each_caixa in no.state.local_caixas:\par
+            lista = []\par
+            dist_alvo = 0\par
+            for each_alvo in no.state.local_alvos:\par
+                nova_dist_alvo = math.sqrt((each_caixa.width-each_alvo.width)**2 + (each_caixa.height-each_alvo.height)**2)\par
+                lista.append(nova_dist_alvo)\par
+            valor_h += min(lista)\par
+        return valor_h\par
+            \par
+\par
+\par
+    def h2(self,no):\par
+        """\par
+        Esta heuristica desvaloriza por cada caixa que esta no canto\par
+        """\par
+        valor_h = 0\par
+        for each in no.state.local_caixas:\par
+            if no.state.in_corner(each):\par
+                valor_h+=1\par
+        return valor_h\par
+\par
+\par
+    def h3(self,no):\par
+        """\par
+        Valoriza o que tiver menor distancia entre o arrumador e a primeira caixa que esta state.local_caixas\par
+        """\par
+        caixas = no.state.local_caixas\par
+        lista = []\par
+        arrumador = no.state.arrumador\par
+        for caixa in caixas:\par
+            lista.append(math.sqrt((caixa.width-arrumador.width)**2 + (caixa.height-arrumador.height)**2))\par
+        return min(lista)\par
+\par
+    def h4(self,no):\par
+        h1 = self.h1(no)\par
+        h1+= self.h2(no)\par
+        \par
+        return h1\par
+        \par
+        \par
+###############################\par
+from things import *\par
+def examples(filename):\par
+    local_paredes = []\par
+    local_alvos = []\par
+    local_caixas = []\par
+    local_arrumador = Arrumador((0,0))\par
+    x = 0\par
+    with open(filename,'r') as fich:\par
+        mapa = fich.readlines()\par
+        y = len(mapa)   \par
+        for each_line in mapa:\par
+            x = 1\par
+            for each in each_line:\par
+                if each == "#":\par
+                    local_paredes.append(Parede((x,y)))\par
+                elif each == 'o':\par
+                    local_alvos.append(Alvo((x,y)))\par
+                elif each == 'A':\par
+                    local_arrumador = Arrumador((x,y))\par
+                elif each == '*':\par
+                    local_caixas.append(Caixa((x,y)))\par
+                x+=1\par
+            y-=1\par
+\par
+    width = x\par
+    height = width\par
+\par
+\par
+    return \{'width':width,'height':height,'local_arrumador':local_arrumador,'local_caixas':local_caixas,\\\par
+                'local_alvos':local_alvos,'local_paredes':local_paredes\}\par
+\par
+\par
+#######A ir buscar ao ficheiro   \par
+example = examples('puzzle2.txt')\par
+local_alvos = example['local_alvos']\par
+parede = example['local_paredes']\par
+arrumador = example['local_arrumador']\par
+local_caixas = example['local_caixas']\par
+width = example['width']\par
+height = example['height']\par
+###########\par
+#########Teste\par
+#local_alvos = [Alvo((0,2)),Alvo((1,2))]\par
+#parede = []\par
+#arrumador = Arrumador((2,2))\par
+#local_caixas = [Caixa((4,2))]\par
+\par
+#width = 5\par
+#height = 5\par
+#############\par
+amb = Estado(width,height,arrumador,local_alvos,local_caixas,parede)\par
+game = Game(amb)\par
+tempo_inicial = time.time()\par
+#res = depth_first_tree_search(game)\par
+#res = depth_first_graph_search(game)\par
+#res = uniform_cost_search(game)\par
+#res = breadth_first_search(game)\par
+#res = iterative_deepening_search(game)\par
+#res = depth_limited_search(game,1)\par
+#res = best_first_graph_search(game,game.h2)\par
+#res = best_first_graph_search(game,game.h3)\par
+#res = astar_search(game,game.h3)\par
+\par
+#Para correr tem descomentar o algoritmo que quer\par
+\par
+\par
+\par
+\par
+}
+ 
